@@ -26,6 +26,8 @@ import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
 
+import java.util.List;
+
 class Emojifier {
 
     private static final String LOG_TAG = Emojifier.class.getSimpleName();
@@ -37,7 +39,6 @@ class Emojifier {
      * @param picture The picture in which to detect the faces.
      */
     static void detectFaces(Context context, Bitmap picture) {
-
         // Create the face detector, disable tracking and enable classifications
         FaceDetector detector = new FaceDetector.Builder(context)
                 .setTrackingEnabled(false)
@@ -56,13 +57,26 @@ class Emojifier {
         // If there are no faces detected, show a Toast message
         if(faces.size() == 0){
             Toast.makeText(context, R.string.no_faces_message, Toast.LENGTH_SHORT).show();
+        } else {
+            for (int i = 0; i < faces.size(); ++i) {
+                Face face = faces.valueAt(i);
+                getClassifications(face);
+            }
         }
 
-        // TODO (2): Iterate through the faces, calling getClassifications() for each face.
+        // COMPLETED (2): Iterate through the faces, calling getClassifications() for each face.
 
         // Release the detector
         detector.release();
     }
 
-    // TODO (1): Create a static method called getClassifications() which logs the probability of each eye being open and that the person is smiling.
+    // COMPLETED (1): Create a static method called getClassifications() which logs the probability of each eye being open and that the person is smiling.
+    private static void getClassifications(Face face){
+        Log.d(LOG_TAG, "getClassifications: smilingProb = " + face.getIsSmilingProbability());
+        Log.d(LOG_TAG, "getClassifications: leftEyeOpenProb = "
+                + face.getIsLeftEyeOpenProbability());
+        Log.d(LOG_TAG, "getClassifications: rightEyeOpenProb = "
+                + face.getIsRightEyeOpenProbability());
+    }
+
 }
