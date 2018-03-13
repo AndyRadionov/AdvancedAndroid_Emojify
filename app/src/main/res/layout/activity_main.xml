@@ -39,19 +39,28 @@
         android:id="@+id/title_text_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/emojify_button"
+        android:layout_above="@+id/emojify_camera_button"
         android:layout_centerHorizontal="true"
         android:layout_margin="@dimen/view_margin"
         android:text="@string/emojify_me"
         android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
 
     <Button
-        android:id="@+id/emojify_button"
+        android:id="@+id/emojify_camera_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
-        android:text="@string/go"
+        android:text="@string/go_camera"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1"/>
+
+    <Button
+        android:id="@+id/emojify_gallery_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/emojify_camera_button"
+        android:text="@string/go_gallery"
         android:textAppearance="@style/TextAppearance.AppCompat.Display1"/>
 
     <android.support.design.widget.FloatingActionButton

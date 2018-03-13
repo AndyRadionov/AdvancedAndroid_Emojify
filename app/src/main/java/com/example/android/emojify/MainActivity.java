@@ -20,6 +20,7 @@ package com.example.android.emojify;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -48,22 +49,24 @@ public class MainActivity extends AppCompatActivity {
 
 
     private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final int REQUEST_LOAD_IMAGE = 2;
     private static final int REQUEST_STORAGE_PERMISSION = 1;
 
     private static final String FILE_PROVIDER_AUTHORITY = "com.example.android.fileprovider";
 
     @BindView(R.id.image_view) ImageView mImageView;
 
-    @BindView(R.id.emojify_button) Button mEmojifyButton;
+    @BindView(R.id.emojify_camera_button) Button mEmojifyCameraButton;
+    @BindView(R.id.emojify_gallery_button) Button mEmojifyGalleryButton;
     @BindView(R.id.share_button) FloatingActionButton mShareFab;
     @BindView(R.id.save_button) FloatingActionButton mSaveFab;
     @BindView(R.id.clear_button) FloatingActionButton mClearFab;
 
     @BindView(R.id.title_text_view) TextView mTitleTextView;
 
-    private String mTempPhotoPath;
-
+    private String mPhotoPath;
     private Bitmap mResultsBitmap;
+    private boolean mIsGallery;
 
 
     @Override
@@ -73,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Bind the views
         ButterKnife.bind(this);
-
+        mIsGallery = true;
         // COMPLETED (2): Set up Timber
         Timber.plant(new Timber.DebugTree());
     }
@@ -81,8 +84,8 @@ public class MainActivity extends AppCompatActivity {
     /**
      * OnClick method for "Emojify Me!" Button. Launches the camera app.
      */
-    @OnClick(R.id.emojify_button)
-    public void emojifyMe() {
+    @OnClick(R.id.emojify_camera_button)
+    public void emojifyCamera() {
         // Check for the external storage permission
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -94,8 +97,22 @@ public class MainActivity extends AppCompatActivity {
                     REQUEST_STORAGE_PERMISSION);
         } else {
             // Launch the camera if the permission exists
+            mIsGallery = false;
             launchCamera();
         }
+    }
+
+    /**
+     * OnClick method for "Emojify Me!" Button. Launches the camera app.
+     */
+    @OnClick(R.id.emojify_gallery_button)
+    public void emojifyGallery() {
+        mIsGallery = true;
+        Intent i = new Intent(
+                Intent.ACTION_PICK,
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+
+        startActivityForResult(i, REQUEST_LOAD_IMAGE);
     }
 
     @Override
@@ -139,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
             if (photoFile != null) {
 
                 // Get the path of the temporary file
-                mTempPhotoPath = photoFile.getAbsolutePath();
+                mPhotoPath = photoFile.getAbsolutePath();
 
                 // Get the content URI for the image file
                 Uri photoURI = FileProvider.getUriForFile(this,
@@ -159,14 +176,33 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // If the image capture activity was called and was successful
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            // Process the image and set it to the TextView
-            processAndSetImage();
+        if (resultCode == RESULT_OK) {
+            if (requestCode == REQUEST_IMAGE_CAPTURE) {
+                processAndSetImage();
+            } else if (requestCode == REQUEST_LOAD_IMAGE) {
+                loadImageFromGallery(data);
+                processAndSetImage();
+            }
         } else {
 
             // Otherwise, delete the temporary image file
-            BitmapUtils.deleteImageFile(this, mTempPhotoPath);
+            if (!mIsGallery) {
+                BitmapUtils.deleteImageFile(this, mPhotoPath);
+            }
         }
+    }
+
+    private void loadImageFromGallery(Intent data) {
+        Uri selectedImage = data.getData();
+        String[] filePathColumn = { MediaStore.Images.Media.DATA };
+
+        Cursor cursor = getContentResolver().query(selectedImage,
+                filePathColumn, null, null, null);
+        cursor.moveToFirst();
+
+        int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+        mPhotoPath = cursor.getString(columnIndex);
+        cursor.close();
     }
 
     /**
@@ -175,14 +211,15 @@ public class MainActivity extends AppCompatActivity {
     private void processAndSetImage() {
 
         // Toggle Visibility of the views
-        mEmojifyButton.setVisibility(View.GONE);
+        mEmojifyCameraButton.setVisibility(View.GONE);
+        mEmojifyGalleryButton.setVisibility(View.GONE);
         mTitleTextView.setVisibility(View.GONE);
         mSaveFab.setVisibility(View.VISIBLE);
         mShareFab.setVisibility(View.VISIBLE);
         mClearFab.setVisibility(View.VISIBLE);
 
         // Resample the saved image to fit the ImageView
-        mResultsBitmap = BitmapUtils.resamplePic(this, mTempPhotoPath);
+        mResultsBitmap = BitmapUtils.resamplePic(this, mPhotoPath);
         
 
         // Detect the faces and overlay the appropriate emoji
@@ -200,8 +237,9 @@ public class MainActivity extends AppCompatActivity {
     @OnClick(R.id.save_button)
     public void saveMe() {
         // Delete the temporary image file
-        BitmapUtils.deleteImageFile(this, mTempPhotoPath);
-
+        if (!mIsGallery) {
+            BitmapUtils.deleteImageFile(this, mPhotoPath);
+        }
         // Save the image
         BitmapUtils.saveImage(this, mResultsBitmap);
     }
@@ -212,13 +250,14 @@ public class MainActivity extends AppCompatActivity {
     @OnClick(R.id.share_button)
     public void shareMe() {
         // Delete the temporary image file
-        BitmapUtils.deleteImageFile(this, mTempPhotoPath);
-
+        if (!mIsGallery) {
+            BitmapUtils.deleteImageFile(this, mPhotoPath);
+        }
         // Save the image
         BitmapUtils.saveImage(this, mResultsBitmap);
 
         // Share the image
-        BitmapUtils.shareImage(this, mTempPhotoPath);
+        BitmapUtils.shareImage(this, mPhotoPath);
     }
 
     /**
@@ -228,13 +267,16 @@ public class MainActivity extends AppCompatActivity {
     public void clearImage() {
         // Clear the image and toggle the view visibility
         mImageView.setImageResource(0);
-        mEmojifyButton.setVisibility(View.VISIBLE);
+        mEmojifyCameraButton.setVisibility(View.VISIBLE);
+        mEmojifyGalleryButton.setVisibility(View.VISIBLE);
         mTitleTextView.setVisibility(View.VISIBLE);
         mShareFab.setVisibility(View.GONE);
         mSaveFab.setVisibility(View.GONE);
         mClearFab.setVisibility(View.GONE);
 
         // Delete the temporary image file
-        BitmapUtils.deleteImageFile(this, mTempPhotoPath);
+        if (!mIsGallery) {
+            BitmapUtils.deleteImageFile(this, mPhotoPath);
+        }
     }
 }
