@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private String mTempPhotoPath;
 
     private Bitmap mResultsBitmap;
+    private Uri mPublicURI;
 
 
     @Override
@@ -203,6 +204,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Save the image
         BitmapUtils.saveImage(this, mResultsBitmap);
+        String path = MediaStore.Images.Media.insertImage(getContentResolver(), mResultsBitmap, "Emojify image", "Emojify image");
+        mPublicURI = Uri.parse(path);
     }
 
     /**
@@ -210,14 +213,9 @@ public class MainActivity extends AppCompatActivity {
      */
     @OnClick(R.id.share_button)
     public void shareMe() {
-        // Delete the temporary image file
-        BitmapUtils.deleteImageFile(this, mTempPhotoPath);
-
-        // Save the image
-        BitmapUtils.saveImage(this, mResultsBitmap);
-
+        saveMe();
         // Share the image
-        BitmapUtils.shareImage(this, mTempPhotoPath);
+        BitmapUtils.shareImage(this, mPublicURI);
     }
 
     /**

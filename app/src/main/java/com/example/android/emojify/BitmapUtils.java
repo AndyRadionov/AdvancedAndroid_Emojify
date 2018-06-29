@@ -104,15 +104,7 @@ class BitmapUtils {
         File imageFile = new File(imagePath);
 
         // Delete the image
-        boolean deleted = imageFile.delete();
-
-        // If there is an error deleting the file, show a Toast
-        if (!deleted) {
-            String errorMessage = context.getString(R.string.error);
-            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show();
-        }
-
-        return deleted;
+        return imageFile.delete();
     }
 
     /**
@@ -180,15 +172,13 @@ class BitmapUtils {
      * Helper method for sharing an image.
      *
      * @param context   The image context.
-     * @param imagePath The path of the image to be shared.
+     * @param uri The path of the image to be shared.
      */
-    static void shareImage(Context context, String imagePath) {
+    static void shareImage(Context context, Uri uri) {
         // Create the share intent and start the share activity
-        File imageFile = new File(imagePath);
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("image/*");
-        Uri photoURI = FileProvider.getUriForFile(context, FILE_PROVIDER_AUTHORITY, imageFile);
-        shareIntent.putExtra(Intent.EXTRA_STREAM, photoURI);
-        context.startActivity(shareIntent);
+        shareIntent.setType("image/jpeg");
+        shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+        context.startActivity(Intent.createChooser(shareIntent, "Image"));
     }
 }
